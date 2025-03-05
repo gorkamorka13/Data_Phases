@@ -1,0 +1,1 @@
+pyinstaller --onefile --windowed --icon bolt32x32_black.ico datas_phases.py
