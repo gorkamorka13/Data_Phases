@@ -6,10 +6,10 @@
 # - Ajout de la fonctionalité "phase4"
 # - Ajout des Min et Max (dates)aux fenetres Comparaison
 # - Ajout des Min et Max (dates) aux fenetre de phases
+# -Ajout de la moyenne glissante
 # - Ajout d'un marquer aux max pour les fenetres de Comparaison
 # - Ajout du jour aux axes des abscisses
 #********************************************
-
 
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
@@ -38,9 +38,6 @@ class ComparisonWindow:
             Li=min(L_g,L_d)
             res[i]=np.sum(signal_brut[i-Li:i+Li+1])/(2*Li+1)
         return res
-    @staticmethod     
-    def lissage_rolling(data, window_size):
-        return data.rolling(window_size).mean()    
         
     def resources_path(self,relative_path):
         try:
@@ -71,7 +68,6 @@ class ComparisonWindow:
         self.filtered_data = self.data.copy()
         self.plot_type = plot_type
         
-
         # Checkbox for adding all phases data (only for Current and Power windows)
         if self.plot_type in ["Current", "Power"]:
             self.all_phases_var = tk.BooleanVar(value=False)  
@@ -163,11 +159,11 @@ class ComparisonWindow:
 
         # Points counter
         self.points_var = tk.StringVar(value="Points: 0")
-        ttk.Label(entry_frame, textvariable=self.points_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=20)
+        ttk.Label(entry_frame, textvariable=self.points_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=15)
 
         # Time elapsed label
         self.time_elapsed_var = tk.StringVar(value="Time Elapsed: 0s")
-        ttk.Label(entry_frame, textvariable=self.time_elapsed_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=20)
+        ttk.Label(entry_frame, textvariable=self.time_elapsed_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=15)
         
         # Button
         ttk.Button(entry_frame, text="Reset", command=self.reset_range).pack(side=tk.LEFT, padx=5)
@@ -175,7 +171,7 @@ class ComparisonWindow:
         # *******************************Checkboxes Frame in time_frame: visibility_frame
         visibility_frame = ttk.Frame(time_frame)
         visibility_frame.pack(fill=tk.X, pady=5)
-        ttk.Label(visibility_frame, text="Show/Hide Phases:", font=('Arial', 10)).pack(side=tk.LEFT, padx=5)
+        ttk.Label(visibility_frame, text="Visible Phases:", font=('Arial', 8)).pack(side=tk.LEFT, padx=5)
         
         # Liste des phases checkboxes
         self.phase_visibility = {
@@ -199,8 +195,27 @@ class ComparisonWindow:
             
             # Create colored label next to checkbox
             color_label = ttk.Label(visibility_frame, text="■", foreground=colors[i])
-            color_label.pack(side=tk.LEFT, padx=(0, 20))
-                         
+            color_label.pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Création de lacheckbox pour tracer la moyenne glissante
+        self.mean_var = tk.BooleanVar(value=False)                  
+        cb = ttk.Checkbutton(
+            visibility_frame, 
+            text="Moyenne",
+            variable=self.mean_var,
+            command=lambda: self.on_phase_toggle(),
+            style='purple.TCheckbutton'
+        )
+        cb.pack(side=tk.LEFT, padx=10)        
+        # Create colored label next to checkbox
+        color_label = ttk.Label(visibility_frame, text="■", foreground="purple")
+        color_label.pack(side=tk.LEFT, padx=(0, 5))  
+        
+        self.input_field = ttk.Entry(visibility_frame,width=4,textvariable="n")
+        self.input_field.pack(side=tk.LEFT, padx=1)
+        self.input_field.setvar("n","10")
+        self.input_field.bind("<Return>", lambda event: self.on_phase_toggle())        
+                                           
         #Début de création des labels de données (energie, max, min)
         if self.plot_type=="Power":
             self.energy_var = tk.StringVar(value="Energy: -- kWh")
@@ -208,11 +223,11 @@ class ComparisonWindow:
             
         # Max value
         self.max_value_var = tk.StringVar(value="Max: ")
-        ttk.Label(visibility_frame, textvariable= self.max_value_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=20)
+        ttk.Label(visibility_frame, textvariable= self.max_value_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=15)
         
         # Min value
         self.min_value_var = tk.StringVar(value="Min: ")
-        ttk.Label(visibility_frame, textvariable= self.min_value_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=20)
+        ttk.Label(visibility_frame, textvariable= self.min_value_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=15)
         
         # Sliders
         self.create_time_sliders(time_frame)
@@ -404,21 +419,21 @@ class ComparisonWindow:
                             total_energy += energy
                         else:
                             total_energy=energy
-                               
-
+                # ****************************************Ajout du tracé moyenne glissante
+                # Calculate and display average  
+                    if self.mean_var.get():  
+                        nombre_points=int(self.input_field.get())
+                        signal_lisse = self.lissage(plot_data[col],nombre_points)
+            
+                        self.ax.plot(plot_data['time'], signal_lisse, 
+                                color="purple", label="moyenne glissante"+label, linewidth=1.5)
+                                    
                 if self.plot_type=="Power":
                     self.energy_var.set(f"Energy: {total_energy:.2f} kWh")
-                    
-                    
-                # Ajout du tracé moyenne glissante
-                # signal_lisse = self.lissage(plot_data[col],100)
-                signal_lisse = self.lissage_rolling(plot_data[col],100)                
-                self.ax.plot(plot_data['time'], signal_lisse, 
-                            color="purple", label=label, linewidth=1)
-                                    
+                                                       
                 # Configure plot
                 self.ax.set_title(f'{self.plot_type} Comparison - All Phases')
-
+            
             self.ax.set_ylabel(f'{self.plot_type} ' + 
                              ('(V)' if self.plot_type == 'Voltage' else 
                               '(A)' if self.plot_type == 'Current' else '(W)'))
@@ -523,14 +538,13 @@ class ComparisonWindow:
 class PowerMonitorApp:
             
     def __init__(self):
-        self.versionning = "Michel ESPARSA - Version 2.1 du 01/03/2025"
+        self.versionning = "Michel ESPARSA\nVersion 2.1 du 01/03/2025"
         self.last_version = \
         "- Création de checkbox des fenêtres à afficher\n"\
         "- Intégration du logo au fichier source\n"\
         "- Ajout de la fonctionalité 'phase4'\n"\
         "- Ajout de Min et Max aux fenêtres Comparaison\n"\
-        "- Ajout de Min et Max aux fenêtre de Phases\n"\
-        "- Ajout de marqueurs max et min aux fenêtres de Comparaison\n"\
+        "- Ajout de Min et Max aux fenêtre de Phases\n- Ajout de marqueurs max et min aux fenêtres de Comparaison\n- Ajout de la moyenne glissante\n"\
         "- Ajout du jour aux axes des abscisses et réduction de la police\n"\
         " -Ajout du suivi du versionning"
 
@@ -546,24 +560,20 @@ class PowerMonitorApp:
         self.photo = ImageTk.PhotoImage(self.image)
         # Set the window icon
         self.root.iconphoto(False, self.photo)
-   
+
         # Create main frame
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.pack(fill=tk.BOTH, expand=True)
-
-        # Add title
-        # title = ttk.Label(main_frame, text="Power Monitor", font=('Arial', 16, 'bold'))
-        # title.pack(pady=10)
-        
-        # Ajouter un error label permettant d'identifier les erreurs
-        self.error_label = ttk.Label(main_frame, text="", foreground="red", wraplength=350)
-        self.error_label.pack(pady=5)
 
         # Add logo
         img = ImageTk.PhotoImage(self.image)
         logo_label = ttk.Label(main_frame, image=img)
         logo_label.image = img # Keep a reference!
         logo_label.pack(pady=5)
+
+        # Ajouter un error label permettant d'identifier les erreurs
+        self.error_label = ttk.Label(main_frame, text="", foreground="red", wraplength=350)
+        self.error_label.pack(pady=5)
 
         author_label = ttk.Label(main_frame, text=self.versionning, font=('Arial', 9, 'italic'))
         author_label.pack(pady=5)
@@ -613,14 +623,14 @@ class PowerMonitorApp:
         # Add checkboxes for phases
         self.phase_vars = {}
         for phase in range(1, 4):
-            var = tk.BooleanVar(value=True)  # Default: all phases checked
+            var = tk.BooleanVar(value=False)  # Default: all phases checked
             self.phase_vars[phase] = var
             cb = ttk.Checkbutton(
                 phase_frame,
                 text=f"Phase {phase}",
                 variable=var
             )
-            cb.pack(anchor=tk.W, padx=20)
+            cb.pack(anchor=tk.W, padx=15)
         
         # Comparison windows selection - now with side=tk.LEFT
         comparison_frame = ttk.Frame(container_frame)
@@ -631,14 +641,15 @@ class PowerMonitorApp:
         # Add checkboxes for comparison types
         self.comparison_vars = {}
         for comp_type in ["Voltage", "Current", "Power"]:
-            var = tk.BooleanVar(value=True)  # Default: all comparisons checked
+            var = tk.BooleanVar(value=False)  # Default: all comparisons checked
             self.comparison_vars[comp_type] = var
             cb = ttk.Checkbutton(
                 comparison_frame,
                 text=comp_type,
                 variable=var
             )
-            cb.pack(anchor=tk.W, padx=20)
+            cb.pack(anchor=tk.W, padx=15)
+        self.comparison_vars["Power"].set(True)  # Default to Power comparison"]            
             
     def create_phase_window(self, phase_num, data):
         # Create new window for phase
@@ -679,15 +690,15 @@ class PowerMonitorApp:
         
         #------------------------ Points counter
         points_var = tk.StringVar(value=f"Points: {len(data):,}")
-        ttk.Label(entry_frame, textvariable=points_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=20)
+        ttk.Label(entry_frame, textvariable=points_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=15)
         
         # -----------------------Time elapsed label
         time_elapsed_var = tk.StringVar(value=f"Time Elapsed: {total_seconds}s")
-        ttk.Label(entry_frame, textvariable=time_elapsed_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=20)
+        ttk.Label(entry_frame, textvariable=time_elapsed_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=15)
         
         # Time elapsed in days, hours, minutes, and seconds
         time_elapsed_dhms_var = tk.StringVar(value="Time Elapsed: --")
-        ttk.Label(entry_frame, textvariable=time_elapsed_dhms_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=20)
+        ttk.Label(entry_frame, textvariable=time_elapsed_dhms_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=15)
         
 
         def update_labels():
