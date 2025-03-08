@@ -150,7 +150,10 @@ class ComparisonWindow:
             new_max_time = date_object + pd.Timedelta(seconds=int(24*3600-1))
             self.max_time = new_max_time
             print(f"new_max_time: {self.max_time}")                 
-            self.end_var.set(new_max_time.strftime('%Y-%m-%d %H:%M:%S'))                       
+            self.end_var.set(new_max_time.strftime('%Y-%m-%d %H:%M:%S'))       
+            test=self.start_slider.get()             
+            test=self.end_slider.get()                            
+                           
             self.update_plot()
           
 
@@ -229,7 +232,8 @@ class ComparisonWindow:
         # Initialize components in order   
         self.create_plot()
         self.create_time_controls()
-        self.create_value_sliders()             
+        self.create_value_sliders()      
+        self.min_slider.set(self.global_min)               
         self.end_slider.set(self.total_seconds)
 
         # Schedule initial plot update
@@ -375,29 +379,31 @@ class ComparisonWindow:
 
     def create_value_sliders(self):
         """Create vertical sliders for filtering data by column values"""
-        self.min_label = ttk.Label(self.slider_frame, text=f"Min value: {self.global_min}", font=("Arial", 10, "bold"))
-        self.min_label.pack(pady=5)
-
-        self.min_slider = ttk.Scale(
-            self.slider_frame, from_=self.global_min, 
-            to=self.global_max,
-            orient=tk.VERTICAL, command=self.on_min_slide
-        ) 
-        self.min_slider.pack(fill=tk.Y, expand=True, pady=5)
-
+        
         self.max_label = ttk.Label(self.slider_frame, text=f"Max value: {self.global_max}", font=("Arial", 10, "bold"))
         self.max_label.pack(pady=5)
-        
+
         self.max_slider = ttk.Scale(
-            self.slider_frame, from_=self.global_min, 
-            to=self.global_max,
+            self.slider_frame, from_=self.global_max, 
+            to=self.global_min,
             orient=tk.VERTICAL, command=self.on_max_slide
         )
-        self.max_slider.set(self.global_max)
         self.max_slider.pack(fill=tk.Y, expand=True, pady=5)   
 
-        self.max_label.pack_forget()
-        self.max_label.pack(pady=5)        
+        
+        self.min_slider = ttk.Scale(
+        self.slider_frame, from_=self.global_max, 
+        to=self.global_min,
+        orient=tk.VERTICAL, command=self.on_min_slide
+        ) 
+        self.min_slider.pack(fill=tk.Y, expand=True, pady=5)
+        self.min_label = ttk.Label(self.slider_frame, text=f"Min value: {self.global_min}", font=("Arial", 10, "bold"))
+        self.min_label.pack(pady=5)        
+
+        self.max_slider.set(self.global_max)
+
+        # self.max_label.pack_forget()
+        # self.max_label.pack(pady=5)        
 
     def get_filter_column(self, phase=None):
         """Get the column to filter based on plot type and phase"""
@@ -573,7 +579,7 @@ class ComparisonWindow:
         
     def on_start_slide(self, value):
         """Handle start slider movement"""
-        self.min_time = self.data['time'].min()       
+        # self.min_time = self.data['time'].min()       
         seconds = float(value)
         if seconds < self.end_slider.get():
             new_time = self.min_time + pd.Timedelta(seconds=int(seconds))
@@ -584,7 +590,7 @@ class ComparisonWindow:
 
     def on_end_slide(self, value):
         """Handle end slider movement"""
-        self.min_time = self.data['time'].min()             
+        # self.min_time = self.data['time'].min()             
         seconds = float(value)
         if seconds > self.start_slider.get():
             new_time = self.min_time + pd.Timedelta(seconds=int(seconds))
