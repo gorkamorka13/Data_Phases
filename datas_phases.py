@@ -6,9 +6,12 @@
 # - Ajout de la fonctionalité "phase4"
 # - Ajout des Min et Max (dates)aux fenetres Comparaison
 # - Ajout des Min et Max (dates) aux fenetre de phases
-# -Ajout de la moyenne glissante
+# - Ajout de la moyenne glissante
 # - Ajout d'un marquer aux max pour les fenetres de Comparaison
 # - Ajout du jour aux axes des abscisses
+# Michel ESPARSA - Version 2.1 du 01/03/2025
+# - Inversion des value sliders
+# - Ajout de la fonctionnalité de calendrier
 #********************************************
 
 import tkinter as tk
@@ -135,6 +138,7 @@ class ComparisonWindow:
         return os.path.join(base_path,relative_path)    
 
     def open_calendar(self):
+        seconds = float(0)        
         self.min_time = self.data['time'].min()
         self.max_time = self.data['time'].max()        
         cal = Calendar(self.window, self.min_time, self.max_time)  # Pass min/max dates
@@ -142,21 +146,25 @@ class ComparisonWindow:
         if self.selected_calendar_date:
             print(f"Selected date: {self.selected_calendar_date}")
             date_object = datetime.combine(self.selected_calendar_date, time(0, 0, 0))
-            print(f"date_object: {date_object}")              
+            print(f"date_object: {date_object}")                       
             new_min_time = date_object + pd.Timedelta(seconds=int(0))
-            self.min_time = new_min_time
-            print(f"new_min_time: {self.min_time}")                 
-            self.start_var.set(new_min_time.strftime('%Y-%m-%d %H:%M:%S'))  
+            # si la date selectionnée calendrier est infèrieure à la date de début des données
+            if (new_min_time-self.min_time).total_seconds() < 0:
+                new_min_time = self.min_time
+            # nombre de secondes entre le début des donénes et la date selectionnée dans le calendrier
+            diff_begin_seconds = int((new_min_time-self.min_time).total_seconds())
+            # date selectionnée dans le calendrier plus 24 heures en secondes
             new_max_time = date_object + pd.Timedelta(seconds=int(24*3600-1))
-            self.max_time = new_max_time
-            print(f"new_max_time: {self.max_time}")                 
-            self.end_var.set(new_max_time.strftime('%Y-%m-%d %H:%M:%S'))       
-            test=self.start_slider.get()             
-            test=self.end_slider.get()                            
-                           
-            self.update_plot()
-          
-
+            # nombre de secondes entre la date sélectionnée dans le calendrier et la date de fin des données            
+            diff_end_seconds = int((new_max_time - new_min_time).total_seconds())            
+            # mise à jour des sliders
+            self.start_slider.set(diff_begin_seconds)
+            self.end_slider.set(diff_begin_seconds + diff_end_seconds)
+            # mise à jour des variables de temps
+            self.start_var.set(new_min_time.strftime('%Y-%m-%d %H:%M:%S'))
+            self.end_var.set(new_max_time.strftime('%Y-%m-%d %H:%M:%S'))
+                          
+                        
                     
     def __init__(self, parent, data, plot_type):
         
@@ -236,8 +244,7 @@ class ComparisonWindow:
         self.min_slider.set(self.global_min)               
         self.end_slider.set(self.total_seconds)
 
-        # Schedule initial plot update
-        # self.window.after(100, self.update_plot)
+
 
     def create_plot(self):
         """Create the matplotlib plot area"""
@@ -401,9 +408,7 @@ class ComparisonWindow:
         self.min_label.pack(pady=5)        
 
         self.max_slider.set(self.global_max)
-
-        # self.max_label.pack_forget()
-        # self.max_label.pack(pady=5)        
+    
 
     def get_filter_column(self, phase=None):
         """Get the column to filter based on plot type and phase"""
@@ -637,17 +642,18 @@ class ComparisonWindow:
         
         # Store current positions as percentages
         old_range = self.max_slider.cget('to') - self.max_slider.cget('from')
-        min_percent = (self.min_slider.get() - self.min_slider.cget('from')) / old_range if old_range != 0 else 0
+        min_percent = (self.min_slider.get() - self.min_slider.cget('to')) / old_range if old_range != 0 else 0
         max_percent = (self.max_slider.get() - self.max_slider.cget('from')) / old_range if old_range != 0 else 1
         
         # Update slider configurations
-        self.min_slider.configure(from_=min_val, to=max_val)
-        self.max_slider.configure(from_=min_val, to=max_val)
+        self.max_slider.configure(from_=max_val, to=min_val)        
+        self.min_slider.configure(from_=max_val, to=min_val)
+
         
         # Set new values maintaining relative positions
         new_range = max_val - min_val
-        self.min_slider.set(min_val + (min_percent * new_range))
-        self.max_slider.set(min_val + (max_percent * new_range))
+        self.max_slider.set(max_val + (max_percent * new_range))
+        self.min_slider.set(min_val + (min_percent * new_range))        
         
         # Update labels
         self.min_label.config(text=f"Min value: {float(self.min_slider.get()):.2f}")
@@ -662,14 +668,19 @@ class ComparisonWindow:
 class PowerMonitorApp:
             
     def __init__(self):
-        self.versionning = "Michel ESPARSA\nVersion 2.1 du 01/03/2025"
+        self.versionning = "Michel ESPARSA\nVersion 2.2 du 08/03/2025"
         self.last_version = \
         "- Création de checkbox des fenêtres à afficher\n"\
         "- Intégration du logo au fichier source\n"\
         "- Ajout de la fonctionalité 'phase4'\n"\
         "- Ajout de Min et Max aux fenêtres Comparaison\n"\
-        "- Ajout de Min et Max aux fenêtre de Phases\n- Ajout de marqueurs max et min aux fenêtres de Comparaison\n- Ajout de la moyenne glissante\n"\
+        "- Ajout de Min et Max aux fenêtre de Phases\n"\
+        "- Ajout de marqueurs max et min aux fenêtres de Comparaison\n"\
+        "- Ajout de la moyenne glissante\n"\
         "- Ajout du jour aux axes des abscisses et réduction de la police\n"\
+        "Michel ESPARSA - Version 2.2 du 08/03/2025\n"\
+        "- Ajout de la fonctionnalité de calendrier\n"\
+        "- Inversion des slier de valeurs\n"\
         " -Ajout du suivi du versionning"
 
         self.root = tk.Tk()
