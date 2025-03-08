@@ -9,7 +9,7 @@
 # - Ajout de la moyenne glissante
 # - Ajout d'un marquer aux max pour les fenetres de Comparaison
 # - Ajout du jour aux axes des abscisses
-# Michel ESPARSA - Version 2.1 du 01/03/2025
+# Michel ESPARSA - Version 2.2 du 08/03/2025
 # - Inversion des value sliders
 # - Ajout de la fonctionnalité de calendrier
 #********************************************
@@ -668,8 +668,8 @@ class ComparisonWindow:
 class PowerMonitorApp:
             
     def __init__(self):
-        self.versionning = "Michel ESPARSA\nVersion 2.2 du 08/03/2025"
-        self.last_version = \
+        self.versionning = "       Michel ESPARSA\nVersion 2.1 du 01/03/2025"
+        self.last_version = "Michel ESPARSA - Version 2.1 du 01/03/2025\n"\
         "- Création de checkbox des fenêtres à afficher\n"\
         "- Intégration du logo au fichier source\n"\
         "- Ajout de la fonctionalité 'phase4'\n"\
@@ -680,7 +680,7 @@ class PowerMonitorApp:
         "- Ajout du jour aux axes des abscisses et réduction de la police\n"\
         "Michel ESPARSA - Version 2.2 du 08/03/2025\n"\
         "- Ajout de la fonctionnalité de calendrier\n"\
-        "- Inversion des slier de valeurs\n"\
+        "- Inversion des sliders de valeurs\n"\
         " -Ajout du suivi du versionning"
 
         self.root = tk.Tk()
@@ -735,7 +735,7 @@ class PowerMonitorApp:
 
         # Help menu
         help_menu = tk.Menu(menu_bar, tearoff=0)
-        help_menu.add_command(label="About", command=lambda: messagebox.showinfo("A propos", self.versionning + "\n\n" + self.last_version))
+        help_menu.add_command(label="About", command=lambda: messagebox.showinfo("A propos",  self.last_version))
         menu_bar.add_cascade(label="Help", menu=help_menu)
         self.root.config(menu=menu_bar)        
         
