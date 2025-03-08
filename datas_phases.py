@@ -26,9 +26,97 @@ import resources
 import io
 import base64
 
+import tkinter as tk
+from tkinter import ttk
+import calendar
+from datetime import datetime, date
+from datetime import datetime, time
 
-class ComparisonWindow:
-    
+class Calendar(tk.Toplevel):
+    def __init__(self, parent, min_date, max_date):
+        super().__init__(parent)
+        self.title("Select Date")
+        self.geometry("300x250")  # Adjust as needed
+        self.resizable(False, False)
+        self.transient(parent) # Make it a modal dialog
+
+        self.min_date = min_date
+        self.max_date = max_date
+        self.selected_date = None # Initialize
+
+        self.cal = calendar.Calendar()
+        self.year = self.min_date.year
+        self.month = self.min_date.month
+
+        self.month_label = ttk.Label(self, text="", font=("Arial", 12, "bold"))
+        self.month_label.pack(pady=5)
+
+        self.calendar_frame = ttk.Frame(self)
+        self.calendar_frame.pack(pady=5)
+
+        self.prev_button = ttk.Button(self, text="<", command=self.prev_month)
+        self.next_button = ttk.Button(self, text=">", command=self.next_month)
+
+        self.prev_button.pack(side=tk.LEFT, padx=5)
+        self.next_button.pack(side=tk.RIGHT, padx=5)
+
+        self.draw_calendar()
+
+        self.protocol("WM_DELETE_WINDOW", self.close_window) # Handle close button
+
+        self.wait_window(self)  # Keep the window open until it's closed
+        
+    def draw_calendar(self):
+        for widget in self.calendar_frame.winfo_children():
+            widget.destroy()
+
+        self.month_label.config(text=f"{calendar.month_name[self.month]} {self.year}")
+
+        days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        for col, day in enumerate(days):
+            ttk.Label(self.calendar_frame, text=day, width=3, anchor="center").grid(row=0, column=col, padx=1, pady=1)
+
+        month_days = self.cal.monthdayscalendar(self.year, self.month)
+
+        for row, week in enumerate(month_days):
+            for col, day in enumerate(week):
+                if day != 0:
+                    current_date = date(self.year, self.month, day)
+                    if self.min_date.date() <= current_date <= self.max_date.date():
+                        button = ttk.Button(self.calendar_frame, text=day, width=3, command=lambda d=day: self.select_date(d))
+                        button.grid(row=row + 1, column=col, padx=1, pady=1)
+                    else:
+                        label = ttk.Label(self.calendar_frame, text=day, width=3, anchor="center", foreground="gray")
+                        label.grid(row=row + 1, column=col, padx=1, pady=1)
+
+    def prev_month(self):
+        self.month -= 1
+        if self.month < 1:
+            self.month = 12
+            self.year -= 1
+        if date(self.year, self.month, 1) < self.min_date.date():
+            self.year = self.min_date.year
+            self.month = self.min_date.month
+        self.draw_calendar()
+
+    def next_month(self):
+        self.month += 1
+        if self.month > 12:
+            self.month = 1
+            self.year += 1
+        if date(self.year, self.month, calendar.monthrange(self.year, self.month)[1]) > self.max_date.date():
+            self.year = self.max_date.year
+            self.month = self.max_date.month
+        self.draw_calendar()
+
+    def select_date(self, day):
+        self.selected_date = date(self.year, self.month, day)      
+        self.close_window() # Close when date is selected
+        
+    def close_window(self):
+        self.destroy() # Destroy the window
+
+class ComparisonWindow:                       
     @staticmethod
     def lissage(signal_brut,L):
         res = np.copy(signal_brut) # duplication des valeurs
@@ -45,8 +133,32 @@ class ComparisonWindow:
         except Exception:
             base_path=os.path.abspath(".")
         return os.path.join(base_path,relative_path)    
-            
+
+    def open_calendar(self):
+        self.min_time = self.data['time'].min()
+        self.max_time = self.data['time'].max()        
+        cal = Calendar(self.window, self.min_time, self.max_time)  # Pass min/max dates
+        self.selected_calendar_date = cal.selected_date # Retrieve selected date
+        if self.selected_calendar_date:
+            print(f"Selected date: {self.selected_calendar_date}")
+            date_object = datetime.combine(self.selected_calendar_date, time(0, 0, 0))
+            print(f"date_object: {date_object}")              
+            new_min_time = date_object + pd.Timedelta(seconds=int(0))
+            self.min_time = new_min_time
+            print(f"new_min_time: {self.min_time}")                 
+            self.start_var.set(new_min_time.strftime('%Y-%m-%d %H:%M:%S'))  
+            new_max_time = date_object + pd.Timedelta(seconds=int(24*3600-1))
+            self.max_time = new_max_time
+            print(f"new_max_time: {self.max_time}")                 
+            self.end_var.set(new_max_time.strftime('%Y-%m-%d %H:%M:%S'))                       
+            self.update_plot()
+          
+
+                    
     def __init__(self, parent, data, plot_type):
+        
+        # Inside ComparisonWindow's __init__:
+        self.selected_calendar_date = None
         # Create window
         self.window = tk.Toplevel(parent)
         self.window.title(f"{plot_type} Comparison - All Phases")
@@ -74,7 +186,7 @@ class ComparisonWindow:
             self.all_phases_var.trace_add('write', lambda *args: self.on_phase_toggle())                  
 
         try:
-            # Convert time column
+            # Convert time column           
             self.data['time'] = pd.to_datetime(self.data['time'], format='%d/%m/%Y %H:%M:%S')
 
             # Get time range
@@ -146,7 +258,7 @@ class ComparisonWindow:
         # Entry frame
         entry_frame = ttk.Frame(time_frame)
         entry_frame.pack(fill=tk.X, pady=5)
-
+        
         # Start time
         ttk.Label(entry_frame, text="Start:").pack(side=tk.LEFT, padx=5)
         self.start_var = tk.StringVar(value=self.min_time.strftime('%Y-%m-%d %H:%M:%S'))
@@ -167,11 +279,21 @@ class ComparisonWindow:
         
         # Button
         ttk.Button(entry_frame, text="Reset", command=self.reset_range).pack(side=tk.LEFT, padx=5)
+        
+                # Inside ComparisonWindow's create_time_controls:
+        ttk.Button(entry_frame, text="Calendar", command=self.open_calendar).pack(side=tk.LEFT, padx=5)
 
-        # *******************************Checkboxes Frame in time_frame: visibility_frame
-        visibility_frame = ttk.Frame(time_frame)
+        # Sliders
+        self.create_time_sliders(time_frame)
+        
+        # Checkboxes
+        self.create_checkboxes(time_frame)        
+        
+    def create_checkboxes(self, parent):
+        # *******************************Checkboxes Frame in time_frame-> visibility_frame
+        visibility_frame = ttk.Frame(parent)
         visibility_frame.pack(fill=tk.X, pady=5)
-        ttk.Label(visibility_frame, text="Visible Phases:", font=('Arial', 8)).pack(side=tk.LEFT, padx=5)
+        ttk.Label(visibility_frame, text="Visible Phases:", font=('Arial', 10)).pack(side=tk.LEFT, padx=5)
         
         # Liste des phases checkboxes
         self.phase_visibility = {
@@ -228,11 +350,8 @@ class ComparisonWindow:
         # Min value
         self.min_value_var = tk.StringVar(value="Min: ")
         ttk.Label(visibility_frame, textvariable= self.min_value_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=15)
-        
-        # Sliders
-        self.create_time_sliders(time_frame)
-
-    def create_time_sliders(self, parent):
+                
+    def create_time_sliders(self, parent):  
         """Create the time range sliders"""
         # Start slider
         start_frame = ttk.Frame(parent)
@@ -427,7 +546,7 @@ class ComparisonWindow:
             
                         self.ax.plot(plot_data['time'], signal_lisse, 
                                 color="purple", label="moyenne glissante"+label, linewidth=1.5)
-                                    
+                            
                 if self.plot_type=="Power":
                     self.energy_var.set(f"Energy: {total_energy:.2f} kWh")
                                                        
@@ -454,6 +573,7 @@ class ComparisonWindow:
         
     def on_start_slide(self, value):
         """Handle start slider movement"""
+        self.min_time = self.data['time'].min()       
         seconds = float(value)
         if seconds < self.end_slider.get():
             new_time = self.min_time + pd.Timedelta(seconds=int(seconds))
@@ -464,6 +584,7 @@ class ComparisonWindow:
 
     def on_end_slide(self, value):
         """Handle end slider movement"""
+        self.min_time = self.data['time'].min()             
         seconds = float(value)
         if seconds > self.start_slider.get():
             new_time = self.min_time + pd.Timedelta(seconds=int(seconds))
@@ -530,9 +651,6 @@ class ComparisonWindow:
         """Handle phase visibility toggle"""
         self.update_slider_ranges()
         self.update_plot()
-
-
-
 
 
 class PowerMonitorApp:
@@ -742,11 +860,7 @@ class PowerMonitorApp:
         ttk.Label(avg_frame, textvariable=power_max_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=15)    
          
         # Labels for min values (seulement power)
-        # voltage_max_var = tk.StringVar(value="Voltage Max: --")
-        # current_max_var = tk.StringVar(value="Current Max: --")
         power_min_var = tk.StringVar(value="Power Min: --")
-        # ttk.Label(avg_frame, textvariable=voltage_max_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=15)
-        # ttk.Label(avg_frame, textvariable=current_max_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=15)
         ttk.Label(avg_frame, textvariable=power_min_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=15)                
                         
         # Slider frame
