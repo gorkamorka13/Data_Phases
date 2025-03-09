@@ -7,7 +7,7 @@
 # - Ajout des Min et Max (dates)aux fenetres Comparaison
 # - Ajout des Min et Max (dates) aux fenetre de phases
 # - Ajout de la moyenne glissante
-# - Ajout d'un marquer aux max pour les fenetres de Comparaison
+# - Ajout d'un marqueur aux max pour les fenetres de Comparaison
 # - Ajout du jour aux axes des abscisses
 # Michel ESPARSA - Version 2.2 du 08/03/2025
 # - Inversion des value sliders
@@ -137,34 +137,47 @@ class ComparisonWindow:
             base_path=os.path.abspath(".")
         return os.path.join(base_path,relative_path)    
 
-    def open_calendar(self):
-        seconds = float(0)        
-        self.min_time = self.data['time'].min()
-        self.max_time = self.data['time'].max()        
+    def open_calendar(self):        
         cal = Calendar(self.window, self.min_time, self.max_time)  # Pass min/max dates
         self.selected_calendar_date = cal.selected_date # Retrieve selected date
         if self.selected_calendar_date:
-            print(f"Selected date: {self.selected_calendar_date}")
-            date_object = datetime.combine(self.selected_calendar_date, time(0, 0, 0))
-            print(f"date_object: {date_object}")                       
-            new_min_time = date_object + pd.Timedelta(seconds=int(0))
-            # si la date selectionnée calendrier est infèrieure à la date de début des données
-            if (new_min_time-self.min_time).total_seconds() < 0:
-                new_min_time = self.min_time
-            # nombre de secondes entre le début des donénes et la date selectionnée dans le calendrier
-            diff_begin_seconds = int((new_min_time-self.min_time).total_seconds())
-            # date selectionnée dans le calendrier plus 24 heures en secondes
-            new_max_time = date_object + pd.Timedelta(seconds=int(24*3600-1))
-            # nombre de secondes entre la date sélectionnée dans le calendrier et la date de fin des données            
-            diff_end_seconds = int((new_max_time - new_min_time).total_seconds())            
-            # mise à jour des sliders
-            self.start_slider.set(diff_begin_seconds)
-            self.end_slider.set(diff_begin_seconds + diff_end_seconds)
-            # mise à jour des variables de temps
-            self.start_var.set(new_min_time.strftime('%Y-%m-%d %H:%M:%S'))
-            self.end_var.set(new_max_time.strftime('%Y-%m-%d %H:%M:%S'))
+            # self.min_time = self.data['time'].min()
+            # self.max_time = self.data['time'].max()        
+            # print(f"\n0) self.min_time: {self.min_time}")       
+            # print(f"0) self.max_time: {self.max_time}")
+            position_slider_start=self.start_slider.get()  
+            position_slider_end=self.end_slider.get()  
+            old_start_date= self.min_time + pd.Timedelta(seconds=int(position_slider_start))
+            # print(f"old_start_date: {old_start_date}")
+            old_end_date= self.min_time + pd.Timedelta(seconds=int(position_slider_end))
+            # print(f"old_end_date: {old_end_date}")
+
+            # print(f"Selected date: {self.selected_calendar_date}")
+            date_object = datetime.combine(self.selected_calendar_date, time(0, 0, 0))                     
+            new_start_date = date_object + pd.Timedelta(seconds=int(0))
+                       
+            # si la date selectionnée calendrier est inférieure à la date de début des données
+            if (new_start_date-self.min_time).total_seconds() < 0:
+                new_start_date = self.min_time
+            # print(f"1)new_start_date: {new_start_date}")
+                            
+            # nombre de secondes entre le début des données et la date selectionnée dans le calendrier
+            diff_begin_seconds = int((new_start_date-self.min_time).total_seconds())
+            # print(f"2)diff_begin_seconds: {diff_begin_seconds}")
                           
-                        
+            # date selectionnée dans le calendrier plus 24 heures en secondes
+            new_end_date = date_object + pd.Timedelta(seconds=int(24*3600-1))
+            diff_end_seconds = int((new_end_date - new_start_date).total_seconds()) 
+            # print(f"3)new_end_date: {new_end_date}")            
+            
+            # si la date selectionnée calendrier est supérieure à la date de fin des données alors on deplace slider end d'abord (et inversement)
+            if (new_start_date - old_start_date).total_seconds() < 0:         
+                self.start_slider.set(diff_begin_seconds) 
+                self.end_slider.set(diff_begin_seconds + diff_end_seconds)
+            else:
+                self.end_slider.set(diff_begin_seconds + diff_end_seconds)
+                self.start_slider.set(diff_begin_seconds)                 
+                                         
                     
     def __init__(self, parent, data, plot_type):
         
@@ -243,8 +256,6 @@ class ComparisonWindow:
         self.create_value_sliders()      
         self.min_slider.set(self.global_min)               
         self.end_slider.set(self.total_seconds)
-
-
 
     def create_plot(self):
         """Create the matplotlib plot area"""
@@ -386,7 +397,6 @@ class ComparisonWindow:
 
     def create_value_sliders(self):
         """Create vertical sliders for filtering data by column values"""
-        
         self.max_label = ttk.Label(self.slider_frame, text=f"Max value: {self.global_max}", font=("Arial", 10, "bold"))
         self.max_label.pack(pady=5)
 
@@ -397,7 +407,6 @@ class ComparisonWindow:
         )
         self.max_slider.pack(fill=tk.Y, expand=True, pady=5)   
 
-        
         self.min_slider = ttk.Scale(
         self.slider_frame, from_=self.global_max, 
         to=self.global_min,
@@ -452,7 +461,6 @@ class ComparisonWindow:
         # Get the selected phases
         self.selected_phases = [phase for phase, var in self.phase_visibility.items() if var.get()]
         
-        
         # Get the filter columns based on the selected phases
         columns = [self.get_filter_column(phase=phase[-1]) for phase in self.selected_phases]
         
@@ -500,8 +508,8 @@ class ComparisonWindow:
             columns = self.get_column_names()
             colors = ['blue', 'red', 'green','grey']
             labels = ['Phase 1', 'Phase 2', 'Phase 3','Phase 4']
-
-            total_energy = 0
+            
+            total_energy = 0 # Initialisation de total_energy
 
             for col, color, label in zip(columns, colors, labels):
                 if self.phase_visibility[label].get():  # Only plot if phase is visible
@@ -525,7 +533,7 @@ class ComparisonWindow:
                     )
                     
                     # Mise  à jour les labels Max and Min                                
-                    max_idx = plot_data[col].idxmax()  # This returns the index label
+                    max_idx = plot_data[col].idxmax()  # This returns the index du maximum dans la colone col
                     max_time = plot_data['time'].loc[max_idx]  # Use .loc to access by index label instead of position
                     datetime_str = max_time.strftime('%d/%m %H:%M:%S')             
                     self.max_value_var.set(f"Max: {float(plot_data[col].max()):.2f}"+f" ({datetime_str})")   
@@ -900,7 +908,6 @@ class PowerMonitorApp:
         status_bar = ttk.Label(main_frame, text="", relief=tk.SUNKEN)
         status_bar.pack(fill=tk.X, pady=5)
         
- 
         # Function to update plots
         def update_plots():
             try:
@@ -927,12 +934,7 @@ class PowerMonitorApp:
                 voltage_avg_var.set(f"Voltage Average: {voltage_avg:.2f} V")
                 current_avg_var.set(f"Current Average: {current_avg:.2f} A")
                 power_avg_var.set(f"Power Average: {power_avg:.0f} W")
-                
-                # Calculate and update Max values
-                # voltage_max = plot_data[f'voltagemoy{suffix}'].max()
-                # current_max = plot_data[f'currentmoy{suffix}'].max()
-                # power_max = plot_data[f'powermoy{suffix}'].max()
-                
+                            
                 # Mise  à jour les labels Max and Min                                
                 max_idx = plot_data[f'voltagemoy{suffix}'].idxmax()  # This returns the index label
                 max_time = plot_data['time'].loc[max_idx]  # Use .loc to access by index label instead of position
@@ -948,15 +950,6 @@ class PowerMonitorApp:
                 max_time = plot_data['time'].loc[max_idx]  # Use .loc to access by index label instead of position
                 datetime_str = max_time.strftime('%d/%m %H:%M:%S')       
                 power_max_var.set(f"Power Max: {float(plot_data[f'powermoy{suffix}'].max()):.2f} W"+f" ({datetime_str})")                   
-                                                
-                # voltage_max_var.set(f"Voltage Max: {voltage_max:.2f} V")
-                # current_max_var.set(f"Current Max: {current_max:.2f} A")
-                # power_max_var.set(f"Power Max: {power_max:.0f} W")                
-                # Calculate and update Min values
-                
-                # voltage_min = plot_data[f'voltagemoy{suffix}'].min()
-                # current_min = plot_data[f'currentmoy{suffix}'].min()
-                # power_min = plot_data[f'powermoy{suffix}'].min()  
                 
                 min_idx = plot_data[f'powermoy{suffix}'].idxmin()  # This returns the index label
                 min_time = plot_data['time'].loc[min_idx]  # Use .loc to access by index label instead of position

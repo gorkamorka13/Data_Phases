@@ -141,43 +141,30 @@ class ComparisonWindow:
         cal = Calendar(self.window, self.min_time, self.max_time)  # Pass min/max dates
         self.selected_calendar_date = cal.selected_date # Retrieve selected date
         if self.selected_calendar_date:
-            # self.min_time = self.data['time'].min()
-            # self.max_time = self.data['time'].max()        
-            # print(f"\n0) self.min_time: {self.min_time}")       
-            # print(f"0) self.max_time: {self.max_time}")
             position_slider_start=self.start_slider.get()  
-            position_slider_end=self.end_slider.get()  
             old_start_date= self.min_time + pd.Timedelta(seconds=int(position_slider_start))
-            # print(f"old_start_date: {old_start_date}")
-            old_end_date= self.min_time + pd.Timedelta(seconds=int(position_slider_end))
-            # print(f"old_end_date: {old_end_date}")
 
-            # print(f"Selected date: {self.selected_calendar_date}")
             date_object = datetime.combine(self.selected_calendar_date, time(0, 0, 0))                     
             new_start_date = date_object + pd.Timedelta(seconds=int(0))
                        
             # si la date selectionnée calendrier est inférieure à la date de début des données
             if (new_start_date-self.min_time).total_seconds() < 0:
                 new_start_date = self.min_time
-            # print(f"1)new_start_date: {new_start_date}")
                             
             # nombre de secondes entre le début des données et la date selectionnée dans le calendrier
             diff_begin_seconds = int((new_start_date-self.min_time).total_seconds())
-            # print(f"2)diff_begin_seconds: {diff_begin_seconds}")
                           
             # date selectionnée dans le calendrier plus 24 heures en secondes
             new_end_date = date_object + pd.Timedelta(seconds=int(24*3600-1))
             diff_end_seconds = int((new_end_date - new_start_date).total_seconds()) 
-            # print(f"3)new_end_date: {new_end_date}")            
-            
+                       
             # si la date selectionnée calendrier est supérieure à la date de fin des données alors on deplace slider end d'abord (et inversement)
             if (new_start_date - old_start_date).total_seconds() < 0:         
                 self.start_slider.set(diff_begin_seconds) 
                 self.end_slider.set(diff_begin_seconds + diff_end_seconds)
             else:
                 self.end_slider.set(diff_begin_seconds + diff_end_seconds)
-                self.start_slider.set(diff_begin_seconds)                 
-                                         
+                self.start_slider.set(diff_begin_seconds)                                        
                     
     def __init__(self, parent, data, plot_type):
         
@@ -302,7 +289,7 @@ class ComparisonWindow:
         # Button
         ttk.Button(entry_frame, text="Reset", command=self.reset_range).pack(side=tk.LEFT, padx=5)
         
-                # Inside ComparisonWindow's create_time_controls:
+        # Inside ComparisonWindow's create_time_controls:
         ttk.Button(entry_frame, text="Calendar", command=self.open_calendar).pack(side=tk.LEFT, padx=5)
 
         # Sliders
@@ -418,7 +405,6 @@ class ComparisonWindow:
 
         self.max_slider.set(self.global_max)
     
-
     def get_filter_column(self, phase=None):
         """Get the column to filter based on plot type and phase"""
         if phase is None:
@@ -793,7 +779,7 @@ class PowerMonitorApp:
             )
             cb.pack(anchor=tk.W, padx=15)
         self.comparison_vars["Power"].set(True)  # Default to Power comparison"]            
-            
+
     def create_phase_window(self, phase_num, data):
         # Create new window for phase
         phase_window = tk.Toplevel(self.root)
@@ -843,7 +829,7 @@ class PowerMonitorApp:
         time_elapsed_dhms_var = tk.StringVar(value="Time Elapsed: --")
         ttk.Label(entry_frame, textvariable=time_elapsed_dhms_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=15)
         
-
+        
         def update_labels():
             start_time = pd.to_datetime(start_var.get(), format='%Y-%m-%d %H:%M:%S')
             end_time = pd.to_datetime(end_var.get(), format='%Y-%m-%d %H:%M:%S')
@@ -908,6 +894,35 @@ class PowerMonitorApp:
         status_bar = ttk.Label(main_frame, text="", relief=tk.SUNKEN)
         status_bar.pack(fill=tk.X, pady=5)
         
+        def open_calendar():        
+            cal = Calendar(phase_window, min_time, max_time)  # Pass min/max dates
+            selected_calendar_date = cal.selected_date # Retrieve selected date
+            if selected_calendar_date:
+                position_slider_start=start_slider.get()  
+                old_start_date= min_time + pd.Timedelta(seconds=int(position_slider_start))
+
+                date_object = datetime.combine(selected_calendar_date, time(0, 0, 0))                     
+                new_start_date = date_object + pd.Timedelta(seconds=int(0))
+                        
+                # si la date selectionnée calendrier est inférieure à la date de début des données
+                if (new_start_date-min_time).total_seconds() < 0:
+                    new_start_date = min_time
+                                
+                # nombre de secondes entre le début des données et la date selectionnée dans le calendrier
+                diff_begin_seconds = int((new_start_date-min_time).total_seconds())
+                            
+                # date selectionnée dans le calendrier plus 24 heures en secondes
+                new_end_date = date_object + pd.Timedelta(seconds=int(24*3600-1))
+                diff_end_seconds = int((new_end_date - new_start_date).total_seconds()) 
+                        
+                # si la date selectionnée calendrier est supérieure à la date de fin des données alors on deplace slider end d'abord (et inversement)
+                if (new_start_date - old_start_date).total_seconds() < 0: 
+                    start_slider.set(diff_begin_seconds)                             
+                    end_slider.set(diff_begin_seconds + diff_end_seconds)
+                else:
+                    end_slider.set(diff_begin_seconds + diff_end_seconds)
+                    start_slider.set(diff_begin_seconds)                                        
+                           
         # Function to update plots
         def update_plots():
             try:
@@ -1065,7 +1080,9 @@ class PowerMonitorApp:
         end_slider.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
         
         # Button
-        ttk.Button(entry_frame, text="Reset", command=reset_range).pack(side=tk.LEFT, padx=5)        
+        ttk.Button(entry_frame, text="Reset", command=reset_range).pack(side=tk.LEFT, padx=5)  
+            
+        ttk.Button(entry_frame, text="Calendar", command=open_calendar).pack(side=tk.LEFT, padx=5)          
             
         # Initial plot
         update_plots()
