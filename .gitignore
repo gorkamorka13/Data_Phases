@@ -1,5 +1,8 @@
-build
-dist
+build/
+dist/
 .vscode
-__pycache__
+__pycache__/
+env/
+datamod.txt
 datas_phases.spec
+*.bat
