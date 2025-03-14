@@ -3,6 +3,7 @@ dist/
 .vscode
 __pycache__/
 env/
+Backup/
 datamod.txt
 datas_phases.spec
 *.bat
