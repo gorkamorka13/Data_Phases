@@ -19,7 +19,7 @@ Prolongement du système basé sur microcontrôleur.
     *   Affiche les Min et Max avec le moment où ils sont apparus
 
 *   **Fenêtres de Comparaison :**
-    *   Permet de comparer les données de toutes les phases, ainsi que la moyenne de tension, la somme des intensités et des puissances des 3 phases, dans une seule fenêtre.
+    *   Permet de comparer les données de toutes les phases, ainsi que la moyenne de tension, la somme des intensités et des puissances des trois phases, dans une seule fenêtre.
     *   Comparaison possible pour la tension, le courant et la puissance.
     *   Filtrage des données par valeur grâce à des sliders verticaux pour les valeurs min et max.
     *   Affichage dynamique du nombre de points affichés et du temps écoulé.
@@ -39,7 +39,6 @@ Prolongement du système basé sur microcontrôleur.
     *   Gestion des erreurs avec affichage des messages d'erreur dans une zone dédiée.
 
 *   **Versionning :**
-    *   Affichage du numéro de version et de l'auteur.
     *   Menu "About" présentant l'historique des mises à jour.
 
 ## Installation
@@ -68,6 +67,9 @@ Prolongement du système basé sur microcontrôleur.
 ## Notes
 
 *   Le programme est conçu pour fonctionner avec des données structurées de manière spécifique. Assurez-vous que votre fichier de données respecte le format attendu (séparateur `;`, colonnes pour le temps UNIX, le date/time,, le voltage, le courant et la puissance de chaque phase, la moyenne et les sommes des intensités et des puissances
+
+*   Le fichier datamod.txt joint permet de connaître la structure attendue par le programme.
+
 *   La performance du programme peut être affectée par la taille du fichier de données. Des fichiers très volumineux peuvent entraîner des temps de chargement et de traitement plus longs.
 
 *   A noter la possibilité de transformer le script en executable sous windows. Compiler le fichier.py avec pyinstaller et la ligne de commande
@@ -76,11 +78,10 @@ Prolongement du système basé sur microcontrôleur.
     pyinstaller --onefile --windowed --icon bolt32x32_black.ico datas_phases.py
 ```
 
-*   Le fichier datamod.txt joint permet de connaître la structure attendue par le programme.
 
 ## Auteur
 
-Michel ESPARSA
+Mike
 
 ## Version
 
