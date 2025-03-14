@@ -1,6 +1,6 @@
 # Power Monitor - Visualisation de Données de Phases
 
-Ce programme Python, nommé `Power Monitor`, est une application graphique permettant de visualiser et d'analyser des données de phases issues de fichiers CSV ou TXT, typiquement des données de voltage, courant et puissance.
+Ce programme Python, nommé `Power Monitor`, est une application graphique permettant de visualiser et d'analyser des données de phases issues de fichiers CSV ou TXT, typiquement des données de tension, courant et puissance.
 
 ## Fonctionnalités
 
@@ -10,14 +10,14 @@ Ce programme Python, nommé `Power Monitor`, est une application graphique perme
 
 *   **Visualisation des Phases :**
     *   Crée des fenêtres individuelles pour chaque phase (jusqu'à la phase 3).
-    *   Affichage des courbes de voltage, courant et puissance en fonction du temps.
+    *   Affichage des courbes de tension, courant et puissance en fonction du temps.
     *   Calcul et affichage des valeurs moyennes du voltage, courant et puissance pour chaque phase.
     *   Calcul et affichage de l'énergie consommée par chaque phase (en kWh).
     *   Affichage dynamique du nombre de points affichés et du temps écoulé.
     *   Affiche les Min et Max avec le moment où ils sont apparus
 
 *   **Fenêtres de Comparaison :**
-    *   Permet de comparer les données de toutes les phases, ainsi que la moyenne de tension, la somme des intensités et des puissnaces des 3 phases, dans une seule fenêtre.
+    *   Permet de comparer les données de toutes les phases, ainsi que la moyenne de tension, la somme des intensités et des puissances des 3 phases, dans une seule fenêtre.
     *   Comparaison possible pour la tension, le courant et la puissance.
     *   Filtrage des données par valeur grâce à des sliders verticaux pour les valeurs min et max.
     *   Affichage dynamique du nombre de points affichés et du temps écoulé.
@@ -28,7 +28,7 @@ Ce programme Python, nommé `Power Monitor`, est une application graphique perme
     *   Sliders horizontaux pour définir la plage temporelle à afficher.
     *   Possibilité de saisir manuellement les dates et heures de début et de fin.
     *   Bouton "Reset" pour afficher l'ensemble des données disponibles.
-    *   Ajout d'un calendrier pour sélectionner la jour de l'analyse (00:00:00 à 23:59:59).
+    *   Ajout d'un calendrier pour sélectionner la jour de l'analyse (de 00:00:00 à 23:59:59).
 
 *   **Interface Utilisateur Graphique (GUI) :**
     *   Interface intuitive basée sur Tkinter.
