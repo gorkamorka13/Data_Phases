@@ -71,7 +71,8 @@ Ce programme Python, nommé `Power Monitor`, est une application graphique perme
 A noter la possibilité de transformer le script en executable sous windows. Compiler le fichier.py avec la ligne de commande
 
   ```bash
-    my   ```
+    my```
+
 ## Auteur
 
 Michel ESPARSA
