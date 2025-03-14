@@ -1,2 +1,5 @@
 build
 dist
+.vscode
+__pycache__
+datas_phases.spec
