@@ -62,7 +62,6 @@ Ce programme Python, nommé `Power Monitor`, est une application graphique perme
 
 ![Power Monitor Interface](screenshot.png)
 
-*Insérer ici une capture d'écran de l'interface du programme.*
 
 ## Notes
 
