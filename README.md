@@ -1,6 +1,8 @@
 # Power Monitor - Visualisation de Données de Phases
 
 Ce programme Python, nommé `Power Monitor`, est une application graphique permettant de visualiser et d'analyser des données de phases issues de fichiers CSV ou TXT, typiquement des données de tension, courant et puissance.
+Il constitue un outil intéressant dans le cadre du suivi de consommations et d'événements sur une installation triphasée. 
+Prolongement du système basé sur microcontrôleur.
 
 ## Fonctionnalités
 
@@ -73,6 +75,8 @@ Ce programme Python, nommé `Power Monitor`, est une application graphique perme
   ```bash
     pyinstaller --onefile --windowed --icon bolt32x32_black.ico datas_phases.py
 ```
+
+*   Le fichier datamod.txt joint permet de connaître la structure attendue par le programme.
 
 ## Auteur
 
