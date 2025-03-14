@@ -17,12 +17,12 @@ Ce programme Python, nommé `Power Monitor`, est une application graphique perme
     *   Affiche les Min et Max avec le moment où ils sont apparus
 
 *   **Fenêtres de Comparaison :**
-    *   Permet de comparer les données de toutes les phases (jusqu'à 4 phases) dans une seule fenêtre.
-    *   Comparaison possible pour le voltage, le courant et la puissance.
+    *   Permet de comparer les données de toutes les phases, ainsi que la moyenne de tension, la somme des intensités et des puissnaces des 3 phases, dans une seule fenêtre.
+    *   Comparaison possible pour la tension, le courant et la puissance.
     *   Filtrage des données par valeur grâce à des sliders verticaux pour les valeurs min et max.
     *   Affichage dynamique du nombre de points affichés et du temps écoulé.
     *   Affichage de moyennes glissante avec la possibilité de choisir le nombre de point (valeur par défaut 10)
-    *   Affiche les Min et Max avec le moment où ils sont apparus
+    *   Affiche les Min et Max avec et l'instant où ils sont apparus
 
 *   **Contrôle Temporel :**
     *   Sliders horizontaux pour définir la plage temporelle à afficher.
@@ -54,7 +54,7 @@ Ce programme Python, nommé `Power Monitor`, est une application graphique perme
 1.  Lancez le script `datas_phases.py`.
 2.  Cliquez sur le bouton "Load File" pour charger un fichier CSV ou TXT contenant les données.
 3.  Sélectionnez les phases à afficher et les types de comparaisons souhaitées en cochant les cases correspondantes.
-4.  Ajustez la plage temporelle à l'aide des sliders ou en saisissant directement les dates et heures.
+4.  Ajustez la plage temporelle à l'aide des sliders.
 5.  Utilisez les sliders verticaux pour filtrer les données par valeur (uniquement pour les fenêtres de comparaison).
 6.  Les fenêtres correspondantes s'ouvriront, affichant les graphiques et les informations pertinentes.
 
@@ -65,7 +65,7 @@ Ce programme Python, nommé `Power Monitor`, est une application graphique perme
 
 ## Notes
 
-*   Le programme est conçu pour fonctionner avec des données structurées de manière spécifique. Assurez-vous que votre fichier de données respecte le format attendu (séparateur `;`, colonnes pour le temps, le voltage, le courant et la puissance de chaque phase).
+*   Le programme est conçu pour fonctionner avec des données structurées de manière spécifique. Assurez-vous que votre fichier de données respecte le format attendu (séparateur `;`, colonnes pour le temps UNIX, le date/time,, le voltage, le courant et la puissance de chaque phase, la moyenne et les sommes des intensités et des puissances
 *   La performance du programme peut être affectée par la taille du fichier de données. Des fichiers très volumineux peuvent entraîner des temps de chargement et de traitement plus longs.
 
 ## Auteur
