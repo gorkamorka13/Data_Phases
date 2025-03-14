@@ -68,6 +68,10 @@ Ce programme Python, nommé `Power Monitor`, est une application graphique perme
 *   Le programme est conçu pour fonctionner avec des données structurées de manière spécifique. Assurez-vous que votre fichier de données respecte le format attendu (séparateur `;`, colonnes pour le temps UNIX, le date/time,, le voltage, le courant et la puissance de chaque phase, la moyenne et les sommes des intensités et des puissances
 *   La performance du programme peut être affectée par la taille du fichier de données. Des fichiers très volumineux peuvent entraîner des temps de chargement et de traitement plus longs.
 
+A noter la possibilité de transformer le script en executable sous windows. Compiler le fichier.py avec la ligne de commande
+
+  ```bash
+    my   ```
 ## Auteur
 
 Michel ESPARSA
