@@ -522,14 +522,14 @@ class ComparisonWindow:
                     max_idx = plot_data[col].idxmax()  # This returns the index du maximum dans la colone col
                     max_time = plot_data['time'].loc[max_idx]  # Use .loc to access by index label instead of position
                     datetime_str = max_time.strftime('%d/%m %H:%M:%S')             
-                    self.max_value_var.set(f"Max: {float(plot_data[col].max()):.2f}"+f" ({datetime_str})")   
+                    self.max_value_var.set(f"Max: {float(plot_data[col].max()):.2f}"+f" ({datetime_str})"+f" ({max_idx})")   
                      
                     self.ax.plot(max_time, plot_data[col].max(), 'o', color=color, markeredgecolor='black', markerfacecolor='purple', markersize=6)                     
                                             
                     min_idx = plot_data[col].idxmin()  # This returns the index label
                     min_time = plot_data['time'].loc[min_idx]  # Use .loc to access by index label instead of position
                     datetime_str = min_time.strftime('%d/%m %H:%M:%S') 
-                    self.min_value_var.set(f"Min: {float(plot_data[col].min()):.2f}"+f" ({datetime_str})")  
+                    self.min_value_var.set(f"Min: {float(plot_data[col].min()):.2f}"+f" ({datetime_str})"+f" ({min_idx})")  
                       
                     self.ax.plot(min_time, plot_data[col].min(), 'o', color=color, markeredgecolor='black', markerfacecolor='yellow', markersize=6)                                                                               
             
