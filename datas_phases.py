@@ -12,6 +12,8 @@
 # Michel ESPARSA - Version 2.2 du 08/03/2025
 # - Inversion des value sliders
 # - Ajout de la fonctionnalité de calendrier
+# Michel ESPARSA - Version 2.3 du 20/03/2025
+# - Ajout de la fonctionnalité d'édition de fichier
 #********************************************
 
 import tkinter as tk
@@ -28,12 +30,481 @@ import os,sys
 import resources
 import io
 import base64
+import re
 
 import tkinter as tk
 from tkinter import ttk
 import calendar
 from datetime import datetime, date
 from datetime import datetime, time
+
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox, scrolledtext
+import os
+
+class TextFileEditor:
+    def __init__(self, root, file_path=None):
+        self.root = tk.Toplevel(root)  # Create a new top-level window
+        self.root.title("CSV/TXT File Editor")
+        self.root.geometry("900x600")
+
+        self.current_file_path = file_path
+        self.file_modified = False
+        self.original_text = ""
+
+        self.create_widgets()
+        if self.current_file_path:
+            self.open_file(self.current_file_path)  # Open file if path is provided
+
+    def create_widgets(self):
+        # Main frame
+        main_frame = tk.Frame(self.root)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        # Ajouter une barre d'outils en haut
+        toolbar_frame = tk.Frame(main_frame)
+        toolbar_frame.pack(fill=tk.X, side=tk.TOP, pady=(0, 5))
+
+        # Boutons de la barre d'outils
+        save_button = ttk.Button(toolbar_frame, text="Sauvegarder", command=self.save_file)
+        save_button.pack(side=tk.LEFT, padx=2)
+
+        save_as_button = ttk.Button(toolbar_frame, text="Sauvegarder sous", command=self.save_as_file)
+        save_as_button.pack(side=tk.LEFT, padx=2)
+
+        close_button = ttk.Button(toolbar_frame, text="Fermer", command=self.close_editor)
+        close_button.pack(side=tk.LEFT, padx=2)
+
+        # Ajouter des boutons pour la recherche/remplacement dans toolbar_frame
+        search_button = ttk.Button(toolbar_frame, text="Rechercher", command=self.show_search_dialog)
+        search_button.pack(side=tk.LEFT, padx=2)
+
+        # Header frame - Correction ici : utiliser tk.Frame au lieu de ttk.Frame pour pouvoir utiliser bg
+        self.header_frame = tk.Frame(main_frame, bg="lightgray", height=30)
+        self.header_frame.pack(fill=tk.X, side=tk.TOP)
+
+        # Field headers label - Correction ici aussi pour la cohérence
+        self.field_headers = tk.Label(self.header_frame, text="", bg="lightgray", anchor="w")
+        self.field_headers.pack(fill=tk.X, padx=5, pady=5)
+
+        # Text editor with line numbers
+        self.editor_frame = ttk.Frame(main_frame)
+        self.editor_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Line numbers and text widget side by side
+        self.line_numbers = tk.Text(self.editor_frame, width=4, padx=3, takefocus=0,
+                                   border=0, background='lightgray', state='disabled')
+        self.line_numbers.pack(side=tk.LEFT, fill=tk.Y)
+
+        # Text editor with tags for coloring
+        self.text_editor = scrolledtext.ScrolledText(self.editor_frame, wrap=tk.WORD)
+        self.text_editor.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+
+        # Configure text tags for modified text and CSV syntax highlighting
+        self.text_editor.tag_configure("modified", foreground="red")
+        
+        # Configuration des tags pour la coloration syntaxique CSV
+        self.text_editor.tag_configure("header", foreground="blue", font=("Arial", 10, "bold"))
+        self.text_editor.tag_configure("separator", foreground="red")
+        self.text_editor.tag_configure("number", foreground="black")
+        self.text_editor.tag_configure("date", foreground="purple")
+        self.text_editor.tag_configure("string", foreground="black")
+        self.text_editor.tag_configure("error", background="pink")
+
+        # Link scrolling of line numbers with text editor
+        self.text_editor.bind("<MouseWheel>", self.on_scroll)
+        self.text_editor.bind("<Key>", self.on_text_change)
+        self.text_editor.bind("<<Scroll>>", self.on_scroll)  # Nouveau
+        self.text_editor.bind("<Button-4>", self.on_scroll)  # Pour Linux
+        self.text_editor.bind("<Button-5>", self.on_scroll)  # Pour Linux
+
+        # Status bar frame
+        status_frame = ttk.Frame(self.root)
+        status_frame.pack(fill=tk.X, side=tk.BOTTOM)
+
+        # Error message area (hidden by default)
+        self.error_frame = ttk.Frame(status_frame, height=50)
+        self.error_frame.pack(fill=tk.X, side=tk.BOTTOM)
+        self.error_text = tk.Text(self.error_frame, height=2, fg="red")
+        self.error_text.pack(fill=tk.X)
+        self.error_frame.pack_forget()  # Hidden initially
+
+        # Status bar with info
+        self.status_bar = tk.Label(status_frame, text="Ready", bd=1, relief=tk.SUNKEN, anchor=tk.W)
+        self.status_bar.pack(fill=tk.X, side=tk.BOTTOM)
+
+        self.update_line_numbers()
+
+    def open_file(self, file_path):
+        if self.file_modified:
+            save_prompt = messagebox.askyesnocancel("Save Changes",
+                                                   "Do you want to save changes to the current file?")
+            if save_prompt is None:  # Cancel was clicked
+                return
+            if save_prompt:
+                self.save_file()
+
+        self.current_file_path = file_path
+        self.file_modified = False
+
+        try:
+            # Utiliser un buffer pour lire les fichiers volumineux
+            CHUNK_SIZE = 1024 * 1024  # 1MB chunks
+            self.text_editor.delete(1.0, tk.END)
+            
+            with open(file_path, 'r', encoding='utf-8') as file:
+                while True:
+                    chunk = file.read(CHUNK_SIZE)
+                    if not chunk:
+                        break
+                    self.text_editor.insert(tk.END, chunk)
+                    # Mettre à jour l'interface pendant le chargement
+                    self.root.update_idletasks()
+            
+            self.original_text = self.text_editor.get(1.0, tk.END)
+            self.update_field_headers()
+            self.update_line_numbers()
+            self.apply_syntax_highlighting()  # Appliquer la coloration après le chargement
+            self.update_status(f"Opened {os.path.basename(file_path)}")
+            self.hide_error()
+        except Exception as e:
+            self.show_error(f"Error opening file: {str(e)}")
+
+    def update_field_headers(self):
+        # Get the first line of the content
+        content = self.text_editor.get(1.0, tk.END)
+        lines = content.splitlines()
+
+        if lines:
+            first_line = lines[0]
+            # Extract fields assuming semicolon separator
+            fields = first_line.split(';')
+            formatted_fields = " | ".join([field.strip() for field in fields])
+            self.field_headers.config(text=formatted_fields)
+        else:
+            self.field_headers.config(text="")
+
+    def save_file(self):
+        if not self.current_file_path:
+            self.save_as_file()
+            return
+
+        try:
+            content = self.text_editor.get(1.0, tk.END)
+            with open(self.current_file_path, 'w', encoding='utf-8') as file:
+                file.write(content)
+
+            self.original_text = content
+            self.file_modified = False
+            self.reset_text_color()
+            self.update_field_headers()  # Update headers in case first line changed
+            self.update_status(f"Saved to {os.path.basename(self.current_file_path)}")
+            self.hide_error()
+        except Exception as e:
+            self.show_error(f"Error saving file: {str(e)}")
+
+    def save_as_file(self):
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".txt",
+            filetypes=[("Text files", "*.txt"), ("CSV files", "*.csv"), ("All files", "*.*")]
+        )
+
+        if not file_path:  # Si l'utilisateur annule
+            return
+
+        self.current_file_path = file_path
+        self.save_file()  # Utilise la méthode save_file existante
+
+    def close_editor(self):
+        if self.file_modified:
+            save_prompt = messagebox.askyesnocancel("Sauvegarder les modifications",
+                                                   "Voulez-vous sauvegarder les modifications avant de fermer ?")
+            if save_prompt is None:  # Si l'utilisateur clique sur Annuler
+                return
+            if save_prompt:  # Si l'utilisateur clique sur Oui
+                self.save_file()
+        
+        self.root.destroy()  # Ferme la fenêtre de l'éditeur
+
+    def show_parameters(self):
+        content = self.text_editor.get(1.0, tk.END)
+        lines = content.splitlines()
+
+        # Calculate parameters
+        num_lines = len(lines)
+        num_chars = len(content)
+        file_size = 0
+        if self.current_file_path and os.path.exists(self.current_file_path):
+            file_size = os.path.getsize(self.current_file_path)
+
+        # Count fields (assuming semicolon-separated)
+        total_fields = 0
+        for line in lines:
+            if line.strip():  # Skip empty lines
+                fields = line.split(';')
+                total_fields += len(fields)
+
+        # Create parameters window
+        params_window = tk.Toplevel(self.root)
+        params_window.title("File Parameters")
+        params_window.geometry("300x200")
+        params_window.resizable(False, False)
+
+        # Add parameters to window
+        tk.Label(params_window, text="File Parameters", font=("Arial", 12, "bold")).pack(pady=10)
+
+        if self.current_file_path:
+            tk.Label(params_window, text=f"File: {os.path.basename(self.current_file_path)}").pack(anchor="w", padx=20)
+
+        tk.Label(params_window, text=f"File Size: {file_size} bytes").pack(anchor="w", padx=20)
+        tk.Label(params_window, text=f"Number of Lines: {num_lines}").pack(anchor="w", padx=20)
+        tk.Label(params_window, text=f"Number of Characters: {num_chars}").pack(anchor="w", padx=20)
+        tk.Label(params_window, text=f"Number of Fields: {total_fields}").pack(anchor="w", padx=20)
+
+        tk.Button(params_window, text="Close", command=params_window.destroy).pack(pady=10)
+
+    def show_help(self):
+        help_window = tk.Toplevel(self.root)
+        help_window.title("Help")
+        help_window.geometry("400x300")
+
+        help_text = """
+CSV/TXT File Editor Help
+
+This application allows you to open, edit, and save CSV and TXT files with semicolon-separated values.
+
+Features:
+- Field names from the first line are displayed in the header
+- Line numbers are displayed on the left side
+- Modified text appears in red
+- Errors are shown in red at the bottom of the window
+- Edit any content and save changes
+- Works with semicolon-separated values
+"""
+        help_textbox = tk.Text(help_window, wrap=tk.WORD)
+        help_textbox.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        help_textbox.insert(tk.END, help_text)
+        help_textbox.config(state=tk.DISABLED)
+
+        tk.Button(help_window, text="Close", command=help_window.destroy).pack(pady=10)
+
+    def update_line_numbers(self):
+        self.line_numbers.config(state='normal')
+        self.line_numbers.delete(1.0, tk.END)
+
+        content = self.text_editor.get(1.0, tk.END)
+        lines = content.splitlines()
+        line_count = len(lines)
+
+        for i in range(1, line_count + 1):
+            self.line_numbers.insert(tk.END, f"{i}\n")
+
+        self.line_numbers.config(state='disabled')
+
+    def on_scroll(self, event=None):
+        """Synchronise le défilement des numéros de ligne avec l'éditeur"""
+        self.line_numbers.yview_moveto(self.text_editor.yview()[0])
+        return "break"  # Empêche la propagation de l'événement
+
+    def on_text_change(self, event=None):
+        """Gestionnaire d'événements pour les modifications de texte"""
+        self.update_line_numbers()
+        current_text = self.text_editor.get(1.0, tk.END)
+
+        # Update field headers if first line changed
+        self.update_field_headers()
+
+        if current_text != self.original_text:
+            self.file_modified = True
+            self.highlight_modified_text()
+        else:
+            self.file_modified = False
+            self.reset_text_color()
+
+        # Appliquer la coloration syntaxique
+        self.apply_syntax_highlighting()
+        
+        # Valider le format CSV si nécessaire
+        if self.current_file_path and self.current_file_path.lower().endswith('.csv'):
+            self.validate_csv_format()
+
+    def highlight_modified_text(self):
+        # First remove all tags
+        self.text_editor.tag_remove("modified", "1.0", tk.END)
+
+        # If we have original text, compare and highlight differences
+        if self.original_text:
+            # Get both texts as lines for comparison
+            current_lines = self.text_editor.get("1.0", tk.END).splitlines()
+            original_lines = self.original_text.splitlines()
+
+            # Compare line by line
+            for i, (curr_line, orig_line) in enumerate(zip(current_lines, original_lines)):
+                if curr_line != orig_line:
+                    line_num = i + 1
+                    line_start = f"{line_num}.0"
+                    line_end = f"{line_num}.end"
+                    self.text_editor.tag_add("modified", line_start, line_end)
+
+            # If there are more lines in the current text, mark them as modified
+            if len(current_lines) > len(original_lines):
+                start_line = len(original_lines) + 1
+                for i in range(start_line, len(current_lines) + 1):
+                    line_start = f"{i}.0"
+                    line_end = f"{i}.end"
+                    self.text_editor.tag_add("modified", line_start, line_end)
+        else:
+            # If no original text, highlight everything as modified
+            self.text_editor.tag_add("modified", "1.0", tk.END)
+
+    def reset_text_color(self):
+        self.text_editor.tag_remove("modified", "1.0", tk.END)
+
+    def update_status(self, message):
+        self.status_bar.config(text=message)
+
+    def show_error(self, error_message):
+        self.error_frame.pack(fill=tk.X, side=tk.BOTTOM, before=self.status_bar)
+        self.error_text.config(state='normal')
+        self.error_text.delete(1.0, tk.END)
+        self.error_text.insert(tk.END, error_message)
+        self.error_text.config(state='disabled')
+
+    def hide_error(self):
+        self.error_frame.pack_forget()
+
+    def validate_csv_format(self):
+        if not self.current_file_path:
+            return
+
+        if self.current_file_path.lower().endswith('.csv'):
+            content = self.text_editor.get(1.0, tk.END)
+            lines = content.splitlines()
+
+            # Check for consistent field count
+            field_counts = []
+            for i, line in enumerate(lines):
+                if line.strip():  # Skip empty lines
+                    fields = line.split(';')
+                    field_counts.append(len(fields))
+
+            if field_counts and len(set(field_counts)) > 1:
+                self.show_error("Warning: Inconsistent number of fields across rows")
+            else:
+                self.hide_error()
+
+    def show_search_dialog(self):
+        """Affiche la boîte de dialogue de recherche/remplacement"""
+        search_window = tk.Toplevel(self.root)
+        search_window.title("Rechercher/Remplacer")
+        search_window.geometry("400x150")
+        
+        # Frame pour la recherche
+        search_frame = ttk.LabelFrame(search_window, text="Rechercher/Remplacer", padding=5)
+        search_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        # Champ de recherche
+        ttk.Label(search_frame, text="Rechercher:").grid(row=0, column=0, padx=5, pady=5)
+        search_entry = ttk.Entry(search_frame, width=30)
+        search_entry.grid(row=0, column=1, padx=5, pady=5)
+        
+        # Champ de remplacement
+        ttk.Label(search_frame, text="Remplacer par:").grid(row=1, column=0, padx=5, pady=5)
+        replace_entry = ttk.Entry(search_frame, width=30)
+        replace_entry.grid(row=1, column=1, padx=5, pady=5)
+        
+        def find_text():
+            search_text = search_entry.get()
+            content = self.text_editor.get("1.0", tk.END)
+            start = "1.0"
+            
+            while True:
+                start = self.text_editor.search(search_text, start, tk.END)
+                if not start:
+                    break
+                end = f"{start}+{len(search_text)}c"
+                self.text_editor.tag_add("search", start, end)
+                start = end
+            
+            self.text_editor.tag_config("search", background="yellow")
+        
+        def replace_text():
+            search_text = search_entry.get()
+            replace_text = replace_entry.get()
+            content = self.text_editor.get("1.0", tk.END)
+            new_content = content.replace(search_text, replace_text)
+            self.text_editor.delete("1.0", tk.END)
+            self.text_editor.insert("1.0", new_content)
+        
+        # Boutons
+        ttk.Button(search_frame, text="Rechercher", command=find_text).grid(row=2, column=0, pady=10)
+        ttk.Button(search_frame, text="Remplacer tout", command=replace_text).grid(row=2, column=1, pady=10)
+
+    def apply_syntax_highlighting(self):
+        """Applique la coloration syntaxique pour les fichiers"""
+        if not self.current_file_path:
+            return
+
+        # Supprimer tous les tags de coloration existants
+        for tag in ["header", "separator", "number", "date", "string", "error"]:
+            self.text_editor.tag_remove(tag, "1.0", tk.END)
+
+        content = self.text_editor.get("1.0", tk.END)
+        lines = content.splitlines()
+        
+        if not lines:
+            return
+
+        # Pattern pour la reconnaissance des dates (format: dd/mm/yyyy HH:MM:SS)
+        date_pattern = r'\d{2}/\d{2}/\d{4}\s\d{2}:\d{2}:\d{2}'
+        
+        # Colorer l'en-tête (première ligne)
+        first_line = lines[0]
+        line_end = f"1.{len(first_line)}"
+        self.text_editor.tag_add("header", "1.0", line_end)
+        
+        # Nombre de colonnes attendu (basé sur la première ligne)
+        expected_columns = first_line.count(';') + 1
+        
+        # Traiter chaque ligne
+        for i, line in enumerate(lines, 1):
+            pos = 0
+            in_quotes = False
+            current_field = ""
+            
+            # Vérifier le nombre de colonnes
+            if line.strip() and line.count(';') + 1 != expected_columns:
+                self.text_editor.tag_add("error", f"{i}.0", f"{i}.end")
+            
+            for char in line:
+                position = f"{i}.{pos}"
+                
+                if char == '"':
+                    in_quotes = not in_quotes
+                    current_field = ""
+                elif char == ';':
+                    self.text_editor.tag_add("separator", position)
+                    # Colorer le champ précédent
+                    if current_field:
+                        field_start = pos - len(current_field)
+                        if current_field.replace('.','',1).isdigit():
+                            self.text_editor.tag_add("number", f"{i}.{field_start}", position)
+                        elif re.match(date_pattern, current_field):
+                            self.text_editor.tag_add("date", f"{i}.{field_start}", position)
+                    current_field = ""
+                else:
+                    if not in_quotes:
+                        current_field += char
+                
+                pos += 1
+                
+            # Traiter le dernier champ de la ligne
+            if current_field:
+                field_start = pos - len(current_field)
+                if current_field.replace('.','',1).isdigit():
+                    self.text_editor.tag_add("number", f"{i}.{field_start}", f"{i}.{pos}")
+                elif re.match(date_pattern, current_field):
+                    self.text_editor.tag_add("date", f"{i}.{field_start}", f"{i}.{pos}")
 
 class Calendar(tk.Toplevel):
     def __init__(self, parent, min_date, max_date):
@@ -322,8 +793,7 @@ class ComparisonWindow:
                 command=lambda: self.on_phase_toggle(),
                 style=f'Color{i+1}.TCheckbutton'
             )
-            cb.pack(side=tk.LEFT, padx=10)
-            
+            cb.pack(side=tk.LEFT, padx=10)            
             # Create colored label next to checkbox
             color_label = ttk.Label(visibility_frame, text="■", foreground=colors[i])
             color_label.pack(side=tk.LEFT, padx=(0, 10))
@@ -341,11 +811,6 @@ class ComparisonWindow:
         # Create colored label next to checkbox
         color_label = ttk.Label(visibility_frame, text="■", foreground="purple")
         color_label.pack(side=tk.LEFT, padx=(0, 5))  
-        
-        self.input_field = ttk.Entry(visibility_frame,width=4,textvariable="n")
-        self.input_field.pack(side=tk.LEFT, padx=1)
-        self.input_field.setvar("n","10")
-        self.input_field.bind("<Return>", lambda event: self.on_phase_toggle())        
                                            
         #Début de création des labels de données (energie, max, min)
         if self.plot_type=="Power":
@@ -675,7 +1140,9 @@ class PowerMonitorApp:
         "Michel ESPARSA - Version 2.2 du 08/03/2025\n"\
         "- Ajout de la fonctionnalité de calendrier\n"\
         "- Inversion des sliders de valeurs\n"\
-        " -Ajout du suivi du versionning"
+        " -Ajout du suivi du versionning\n"\
+        "Michel ESPARSA - Version 2.3 du 20/03/2025\n"\
+        "- Ajout de la fonctionnalité d'édition de fichier"
 
         self.root = tk.Tk()
         self.root.title("Power Monitor")
@@ -717,21 +1184,23 @@ class PowerMonitorApp:
         load_btn = ttk.Button(main_frame, text="Load File", command=self.load_file)
         load_btn.pack(pady=10)
         
+        self.loaded_file_path = None  # Store the loaded file path
+        self.text_editor = None
+        
     def create_menu(self): 
-        #Creer un menu
-        menu_bar=tk.Menu(self.root)
+        menu_bar = tk.Menu(self.root)
 
-        # File menu
         file_menu = tk.Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label="File", menu=file_menu)
         file_menu.add_command(label="Open", command=self.load_file)
+        file_menu.add_command(label="Edit Data", command=self.open_text_editor)  # New menu item
+        file_menu.add_separator() # Add a separator
         file_menu.add_command(label="Exit", command=self.root.quit)
 
-        # Help menu
         help_menu = tk.Menu(menu_bar, tearoff=0)
-        help_menu.add_command(label="About", command=lambda: messagebox.showinfo("A propos",  self.last_version))
+        help_menu.add_command(label="A propos", command=lambda: messagebox.showinfo("A propos", self.last_version))
         menu_bar.add_cascade(label="Help", menu=help_menu)
-        self.root.config(menu=menu_bar)        
+        self.root.config(menu=menu_bar)     
         
     def create_display_options(self, parent):
         """Create checkbox options for display selection"""
@@ -831,8 +1300,8 @@ class PowerMonitorApp:
         
         
         def update_labels():
-            start_time = pd.to_datetime(start_var.get(), format='%Y-%m-%d %H:%M:%S')
-            end_time = pd.to_datetime(end_var.get(), format='%Y-%m-%d %H:%M:%S')
+            start_time = pd.to_datetime(start_var.get())
+            end_time = pd.to_datetime(end_var.get())
             filtered_data = data[(data['time'] >= start_time) & (data['time'] <= end_time)]
             points_var.set(f"Points: {len(filtered_data):,}")
             elapsed_seconds = int((end_time - start_time).total_seconds())
@@ -1087,35 +1556,42 @@ class PowerMonitorApp:
         # Initial plot
         update_plots()
 
+    def open_text_editor(self):
+        if self.loaded_file_path:
+            if self.text_editor is None or not tk.Toplevel.winfo_exists(self.text_editor.root):
+                #Create a new instance of the TextFileEditor
+                self.text_editor = TextFileEditor(self.root, self.loaded_file_path)
+        else:
+            messagebox.showinfo("Info", "Charger d'abord le fichier !")
+        
     def load_file(self):
         try:
-            # Open file dialog
             file_path = filedialog.askopenfilename(
                 title="Select File",
-                filetypes=[("txt files", "*.txt"),("CSV files", "*.csv"),("All files", "*.*")]
+                filetypes=[("txt files", "*.txt"), ("CSV files", "*.csv"), ("All files", "*.*")]
             )
-            
+
             if not file_path:
                 return
-            
-            # Read CSV file
+
             data = pd.read_csv(file_path, sep=';')
-            
+
             # Create individual phase windows based on checkbox selection
             for phase in range(1, 4):
                 if self.phase_vars[phase].get():
                     self.create_phase_window(phase, data)
-            
+
             # Create comparison windows based on checkbox selection
             for comp_type in ["Voltage", "Current", "Power"]:
                 if self.comparison_vars[comp_type].get():
                     ComparisonWindow(self.root, data, comp_type)
-            
+
             self.error_label.config(text="")
-            
+            self.loaded_file_path = file_path  # Store the file path
+            if self.text_editor is not None : self.text_editor.open_file(self.loaded_file_path)
+
         except Exception as e:
             self.error_label.config(text=f"Error: {str(e)}")
-    
     def run(self):
         self.root.mainloop()
 
