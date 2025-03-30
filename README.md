@@ -33,7 +33,9 @@ Prolongement du système basé sur microcontrôleur.
     *   Ajout d'un calendrier pour sélectionner la jour de l'analyse (de 00:00:00 à 23:59:59).
 
 *   **Interface Utilisateur Graphique (GUI) :**
-    *   Interface intuitive basée sur Tkinter.
+*   Interface intuitive basée sur Tkinter.
+    *   Éditeur de fichiers texte intégré pour modifier les fichiers CSV directement dans l'application.
+
     *   Cases à cocher pour sélectionner les phases et les types de comparaisons à afficher.
     *   Barre de menus avec options d'ouverture de fichier, de sortie et d'aide.
     *   Gestion des erreurs avec affichage des messages d'erreur dans une zone dédiée.
