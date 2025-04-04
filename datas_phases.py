@@ -811,7 +811,12 @@ class ComparisonWindow:
         # Create colored label next to checkbox
         color_label = ttk.Label(visibility_frame, text="■", foreground="purple")
         color_label.pack(side=tk.LEFT, padx=(0, 5))  
-                                           
+                                    
+                                    
+        self.input_field = ttk.Entry(visibility_frame,width=4,textvariable="n")
+        self.input_field.pack(side=tk.LEFT, padx=1)
+        self.input_field.setvar("n","10")
+        self.input_field.bind("<Return>", lambda event: self.on_phase_toggle())            
         #Début de création des labels de données (energie, max, min)
         if self.plot_type=="Power":
             self.energy_var = tk.StringVar(value="Energy: -- kWh")
@@ -1127,7 +1132,7 @@ class ComparisonWindow:
 class PowerMonitorApp:
             
     def __init__(self):
-        self.versionning = "       Michel ESPARSA\nVersion 2.1 du 01/03/2025"
+        self.versionning = "       Michel ESPARSA\nVersion 2.3 du 20/03/2025"
         self.last_version = "Michel ESPARSA - Version 2.1 du 01/03/2025\n"\
         "- Création de checkbox des fenêtres à afficher\n"\
         "- Intégration du logo au fichier source\n"\
