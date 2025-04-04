@@ -773,7 +773,7 @@ class ComparisonWindow:
         # *******************************Checkboxes Frame in time_frame-> visibility_frame
         visibility_frame = ttk.Frame(parent)
         visibility_frame.pack(fill=tk.X, pady=5)
-        ttk.Label(visibility_frame, text="Visible Phases:", font=('Arial', 10)).pack(side=tk.LEFT, padx=5)
+        ttk.Label(visibility_frame, text="Visible Phases:", font=('Arial', 10)).pack(side=tk.LEFT, padx=(1,1))
         
         # Liste des phases checkboxes
         self.phase_visibility = {
@@ -793,12 +793,12 @@ class ComparisonWindow:
                 command=lambda: self.on_phase_toggle(),
                 style=f'Color{i+1}.TCheckbutton'
             )
-            cb.pack(side=tk.LEFT, padx=10)            
+            cb.pack(side=tk.LEFT, padx=(1,1))            
             # Create colored label next to checkbox
             color_label = ttk.Label(visibility_frame, text="■", foreground=colors[i])
             color_label.pack(side=tk.LEFT, padx=(0, 10))
         
-        # Création de lacheckbox pour tracer la moyenne glissante
+        # Création de la checkbox pour tracer la moyenne glissante
         self.mean_var = tk.BooleanVar(value=False)                  
         cb = ttk.Checkbutton(
             visibility_frame, 
@@ -807,28 +807,31 @@ class ComparisonWindow:
             command=lambda: self.on_phase_toggle(),
             style='purple.TCheckbutton'
         )
-        cb.pack(side=tk.LEFT, padx=10)        
+        cb.pack(side=tk.LEFT, padx=(1,1))        
         # Create colored label next to checkbox
         color_label = ttk.Label(visibility_frame, text="■", foreground="purple")
-        color_label.pack(side=tk.LEFT, padx=(0, 5))  
+        color_label.pack(side=tk.LEFT, padx=(0, 10))  
                                     
                                     
         self.input_field = ttk.Entry(visibility_frame,width=4,textvariable="n")
-        self.input_field.pack(side=tk.LEFT, padx=1)
+        self.input_field.pack(side=tk.LEFT, padx=(1,10))
         self.input_field.setvar("n","10")
         self.input_field.bind("<Return>", lambda event: self.on_phase_toggle())            
         #Début de création des labels de données (energie, max, min)
         if self.plot_type=="Power":
             self.energy_var = tk.StringVar(value="Energy: -- kWh")
-            ttk.Label(visibility_frame, textvariable=self.energy_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=5)
+            ttk.Label(visibility_frame, textvariable=self.energy_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=(1,10))
             
         # Max value
         self.max_value_var = tk.StringVar(value="Max: ")
-        ttk.Label(visibility_frame, textvariable= self.max_value_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=15)
+        ttk.Label(visibility_frame, textvariable= self.max_value_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=(1,1))
+        ttk.Label(visibility_frame, text="●", font=('Arial', 15, 'bold') ,foreground="purple").pack(side=tk.LEFT, padx=(1,10))   
+        color_label.pack(side=tk.LEFT, padx=(0, 1))  
         
         # Min value
         self.min_value_var = tk.StringVar(value="Min: ")
-        ttk.Label(visibility_frame, textvariable= self.min_value_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=15)
+        ttk.Label(visibility_frame, textvariable= self.min_value_var, font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=(1,1))
+        ttk.Label(visibility_frame, text="●", font=('Arial', 15, 'bold') ,foreground="yellow").pack(side=tk.LEFT, padx=(1,1))       
                 
     def create_time_sliders(self, parent):  
         """Create the time range sliders"""
