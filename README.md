@@ -35,7 +35,6 @@ Prolongement du système basé sur microcontrôleur.
 *   **Interface Utilisateur Graphique (GUI) :**
 *   Interface intuitive basée sur Tkinter.
     *   Éditeur de fichiers texte intégré pour modifier les fichiers CSV directement dans l'application.
-
     *   Cases à cocher pour sélectionner les phases et les types de comparaisons à afficher.
     *   Barre de menus avec options d'ouverture de fichier, de sortie et d'aide.
     *   Gestion des erreurs avec affichage des messages d'erreur dans une zone dédiée.
@@ -87,4 +86,4 @@ Mike
 
 ## Version
 
-2.2 du 08/03/2025
+2.3 du 20/03/2025
